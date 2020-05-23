@@ -26,6 +26,7 @@ Based on the videos liked on your youtube account this bot will take the music v
 ### Installing
 
 * Follow directions to get Youtube API id and client_secrets.json file
+* Input json file in same directory as project
 * Get spotify token for creating a playlist from spotify development page
 * Plug these values in secretUserinfo.py 
 
