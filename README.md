@@ -13,11 +13,11 @@ Youtube_dl v 2020.01.24
 
 ### Prerequisites
 
-Python IDE
-Youtube Account
-Spotify Account
-Spotify API keys 
-Youtube API keys
+*Python IDE
+*Youtube Account
+*Spotify Account
+*Spotify API keys 
+*Youtube API keys
 
 ```
 
