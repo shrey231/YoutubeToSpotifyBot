@@ -7,9 +7,9 @@ import googleapiclient.discovery
 import googleapiclient.errors
 import youtube_dl
 
-#Delete line below if using project
+#Delete line below if using project and uncomment "secretUserInfo line"
 from secretInfo import id, token, secret
-from secretUserInfo import id, token, secret
+#from secretUserInfo import id, token, secret
 
 class spotifyPlaylist:
 
@@ -38,10 +38,11 @@ class spotifyPlaylist:
         return youtube_client
 
     def youtubelikedVideos(self):
-        request = self.youtube_client.videos().list(
+        request = self.yClient.videos().list(
             part="snippet,contentDetails,statistics", myRating="like"
         )
         response = request.execute()
+        count = 0
         for items in response["items"]:
             title = items["snippet"]["title"]
             youtube_url = "https://www.youtube.com/watch?v={}".format(items["id"])
@@ -49,16 +50,73 @@ class spotifyPlaylist:
             dL = youtube_dl.YoutubeDL({}).extract_info(youtube_url,download=False)
             song = dL["track"]
             artist = dL["artist"]
+            if song is not None and artist is not None:
+                self.songInfo[title] = { "youtube_url": youtube_url,
+                                        "song_name": song,
+                                        "artist": artist,
+                                        "spotify_uri": self.uriSpotify(song, artist)}
 
     def uriSpotify(self,name,artist):
         query = "https://api.spotify.com/v1/search?query=track%3A{}+artist%3A{}&type=track&offset=0&limit=20".format(name,artist)
-        
+        request = requests.get(
+            query,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {}".format(token)
+            }
+        )
+        requestJson = request.json()
+        print(requestJson)
+        uriSongs = requestJson["tracks"]["items"]
+        uri = uriSongs[0]["uri"]
 
+        return uri
 
+    def createPlaylist(self):
+        request_body = json.dumps({
+            "name": "PythonBotPlaylist",
+            "description": "Playlist containing liked videos from Youtube using Python bot",
+            "public": True
+        })
 
+        query = "https://api.spotify.com/v1/users/{}/playlists".format(id)
+        request = requests.post(
+            query,
+            data=request_body,
+            headers={ "Content-Type": "application/json", "Authorization":"Bearer {}".format(token)}
+        )
+        requests_json = request.json()
 
+        return requests_json["id"]
+    def addsongs(self):
+        self.youtubelikedVideos()
+
+        videoUri = [info["spotify_uri"]for song, info in self.songInfo.items()]
+        playlist = self.createPlaylist()
+        songs = json.dumps(videoUri)
+        query = "https://api.spotify.com/v1/playlists/{}/tracks".format(playlist)
+
+        response = requests.post(
+            query,
+            data=songs,
+            headers={
+                "Content-Type":"application/json",
+                "Authorization":"Bearer {}".format(token)
+            }
+        )
+
+        # check for valid response status
+        print(len(self.songInfo))
+        if response.status_code != 200 or response.status_code!=201:
+            raise Exception(response.status_code)
+
+        response_json = response.json()
+        return response_json
+    def playlistPic(self):
+        pass
 if __name__ == '__main__':
     play = spotifyPlaylist()
+    play.addsongs()
 
 
 
